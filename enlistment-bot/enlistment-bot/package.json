@@ -10,7 +10,8 @@
   "dependencies": {
     "discord.js": "^14.14.1",
     "dotenv": "^16.4.5",
-    "axios": "^1.6.8"
+    "axios": "^1.6.8",
+    "mongodb": "^6.5.0"
   },
   "engines": {
     "node": ">=18.0.0"
