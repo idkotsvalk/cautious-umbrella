@@ -25,9 +25,9 @@ module.exports = {
 
   // ── Channel IDs ───────────────────────────────
   channels: {
-    applicationLogs: 'APPLICATION_LOGS_CHANNEL_ID',  // Every app logged here
-    staffReview:     'STAFF_REVIEW_CHANNEL_ID',       // Sus apps sent here
-    auditLog:        'AUDIT_LOG_CHANNEL_ID',          // Who accepted/denied
+    applicationLogs: '1424344616500465684',  // Every app logged here
+    staffReview:     '1424344616500465684',       // Sus apps sent here
+    auditLog:        '1426567171571585116',          // Who accepted/denied
     training:        '1314617304595693640',            // Mentioned in acceptance DM
   },
 
