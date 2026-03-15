@@ -1,12 +1,16 @@
-// ════════════════════════════════════════════════
-//   index.js — Bot Entry Point
-// ════════════════════════════════════════════════
 const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js');
 const fs     = require('fs');
 const path   = require('path');
+const http   = require('http');
 const config = require('./config');
+const { connect } = require('./utils/db');
 
-// ── Client setup ──────────────────────────────
+const PORT = process.env.PORT || 3000;
+http.createServer((req, res) => {
+  res.writeHead(200);
+  res.end('Bot is running!');
+}).listen(PORT, () => console.log(`✅  HTTP server on port ${PORT}`));
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -19,39 +23,35 @@ const client = new Client({
 
 client.commands = new Collection();
 
-// ── Load commands ─────────────────────────────
-const commandsPath = path.join(__dirname, 'commands');
-const commandFiles = fs.readdirSync(commandsPath).filter(f => f.endsWith('.js'));
-
+const commandFiles = fs.readdirSync('./commands').filter(f => f.endsWith('.js'));
 for (const file of commandFiles) {
-  const command = require(path.join(commandsPath, file));
+  const command = require(path.join(__dirname, 'commands', file));
   if (command.data && command.execute) {
     client.commands.set(command.data.name, command);
-    console.log(`  ✅ Command loaded: /${command.data.name}`);
+    console.log(`  ✅ Command: /${command.data.name}`);
   }
 }
 
-// ── Load events ───────────────────────────────
-const eventsPath = path.join(__dirname, 'events');
-const eventFiles = fs.readdirSync(eventsPath).filter(f => f.endsWith('.js'));
-
+const eventFiles = fs.readdirSync('./events').filter(f => f.endsWith('.js'));
 for (const file of eventFiles) {
-  const event = require(path.join(eventsPath, file));
+  const event = require(path.join(__dirname, 'events', file));
   if (event.once) {
     client.once(event.name, (...args) => event.execute(...args, client));
   } else {
     client.on(event.name, (...args) => event.execute(...args, client));
   }
-  console.log(`  ✅ Event loaded: ${event.name}`);
+  console.log(`  ✅ Event: ${event.name}`);
 }
 
-// ── Login ──────────────────────────────────────
-if (!config.token) {
-  console.error('❌  BOT_TOKEN is missing! Copy .env.example to .env and fill it in.');
-  process.exit(1);
-}
+if (!config.token) { console.error('❌  BOT_TOKEN missing!'); process.exit(1); }
+if (!process.env.MONGODB_URI) { console.error('❌  MONGODB_URI missing!'); process.exit(1); }
 
-client.login(config.token).catch(err => {
-  console.error('❌  Failed to log in:', err.message);
-  process.exit(1);
-});
+(async () => {
+  try {
+    await connect();
+    await client.login(config.token);
+  } catch (err) {
+    console.error('❌  Startup failed:', err.message);
+    process.exit(1);
+  }
+})();
