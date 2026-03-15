@@ -2,6 +2,7 @@ const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js'
 const fs     = require('fs');
 const path   = require('path');
 const http   = require('http');
+const https  = require('https');
 const config = require('./config');
 const { connect } = require('./utils/db');
 
@@ -10,6 +11,16 @@ http.createServer((req, res) => {
   res.writeHead(200);
   res.end('Bot is running!');
 }).listen(PORT, () => console.log(`✅  HTTP server on port ${PORT}`));
+
+const RENDER_URL = process.env.RENDER_EXTERNAL_URL;
+setInterval(() => {
+  if (!RENDER_URL) return;
+  https.get(RENDER_URL, (res) => {
+    console.log(`🔁  Self-ping OK (${res.statusCode})`);
+  }).on('error', (err) => {
+    console.warn(`⚠️  Self-ping failed: ${err.message}`);
+  });
+}, 4 * 60 * 1000);
 
 const client = new Client({
   intents: [
