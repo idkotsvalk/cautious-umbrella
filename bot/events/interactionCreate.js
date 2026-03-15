@@ -10,9 +10,14 @@ const roblox  = require('../utils/roblox');
 const h       = require('../utils/helpers');
 const E       = require('../utils/embeds');
 
+async execute(interaction, client) {
+    console.log(`[interaction] ${interaction.type} — ${interaction.user.tag}`);
+    try {
+
 module.exports = {
   name: 'interactionCreate',
   async execute(interaction, client) {
+    console.log(`[interaction] ${interaction.user.tag} — ${interaction.commandName || interaction.customId || 'unknown'}`);
     try {
       if (interaction.isChatInputCommand()) {
         const cmd = client.commands.get(interaction.commandName);
@@ -40,7 +45,8 @@ module.exports = {
         return;
       }
     } catch (err) {
-      console.error('[interaction]', err);
+      console.error('[interaction ERROR]', err.message);
+      console.error(err.stack);
       const msg = { content: '❌ Something went wrong.', ephemeral: true };
       if (interaction.replied || interaction.deferred) await interaction.followUp(msg).catch(() => {});
       else await interaction.reply(msg).catch(() => {});
