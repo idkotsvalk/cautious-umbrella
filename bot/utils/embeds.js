@@ -6,15 +6,14 @@ const { ageString } = require('./roblox');
 
 function panel() {
   return new EmbedBuilder()
-    .setColor(config.colors.accent)
+    .setColor(0x2B5EA7)
     .setTitle('🎖️  Colberg Grenadiers — Enlistment Portal')
-    .setDescription('> *"Those who serve with honour earn their place in history."*\n\nWelcome, aspiring Rekrut! Click **Start Application** below to begin your enlistment.')
+    .setDescription('Welcome, aspiring Rekrut! Click **Start Application** below to begin your enlistment.')
     .addFields(
-      { name: '📋  Requirements', value: '> ✅  Valid Roblox account\n> ✅  Active Discord account\n> ✅  Commitment to training & events\n> ✅  Respect for chain of command' },
-      { name: '⚔️  Available Divisions', value: '🗡️  **Infantry** — Front-line ground troops\n🪖  **Militia** — Irregular light forces\n🛡️  **Guard** — Elite defensive regiment\n⚓  **Navy** — Maritime operations' },
-      { name: '🔄  Process', value: '**1.** Fill in the form (4 questions)\n**2.** Roblox account verified automatically\n**3.** Account screening runs instantly\n**4.** Clean account → auto accepted\n**5.** Flagged → staff review\n**6.** Accepted → roles & nickname assigned automatically' },
+      { name: '📋  Requirements', value: '✅ Valid Roblox account\n✅ Active Discord account\n✅ Commitment to training' },
+      { name: '⚔️  Divisions', value: '🗡️ Infantry\n🪖 Militia\n🛡️ Guard\n⚓ Navy' },
+      { name: '🔄  Process', value: '1. Fill in the form\n2. Account verified automatically\n3. Clean account = auto accepted\n4. Roles and nickname assigned' },
     )
-    .setFooter({ text: 'Colberg Grenadiers Enlistment System' })
     .setTimestamp();
 }
 
