@@ -57,12 +57,18 @@ for (const file of eventFiles) {
 if (!config.token) { console.error('❌  BOT_TOKEN missing!'); process.exit(1); }
 if (!process.env.MONGODB_URI) { console.error('❌  MONGODB_URI missing!'); process.exit(1); }
 
+console.log('🔄  Attempting Discord login...');
+console.log('🔑  Token starts with:', config.token?.substring(0, 10));
+
 (async () => {
   try {
     await connect();
+    console.log('🔄  Logging into Discord...');
     await client.login(config.token);
+    console.log('✅  Login called successfully');
   } catch (err) {
     console.error('❌  Startup failed:', err.message);
+    console.error(err);
     process.exit(1);
   }
 })();
