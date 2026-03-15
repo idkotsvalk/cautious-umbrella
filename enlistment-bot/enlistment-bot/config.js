@@ -34,7 +34,7 @@ module.exports = {
   // ── Role IDs ──────────────────────────────────
   roles: {
     enlisted:  '1424320589178601472',  // Base role every accepted member gets
-    staffRole: 'STAFF_ROLE_ID',        // Required to use staff commands
+    staffRole: '1350321582467321996',        // Required to use staff commands
 
     divisions: {
       infantry: { id: '1424697278588784670', prefix: 'II.' },
