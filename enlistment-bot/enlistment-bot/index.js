@@ -32,6 +32,9 @@ const client = new Client({
   partials: [Partials.GuildMember],
   rest: { timeout: 60000 },
   failIfNotExists: false,
+  ws: {
+    large_threshold: 50,
+  },
 });
 
 client.commands = new Collection();
