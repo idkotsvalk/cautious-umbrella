@@ -1,12 +1,11 @@
-// ════════════════════════════════════════════════
-//   deploy-commands.js
-//   Run ONCE with: node deploy-commands.js
-//   Re-run whenever you add/change a command
-// ════════════════════════════════════════════════
 const { REST, Routes } = require('discord.js');
 const fs     = require('fs');
 const path   = require('path');
-const config = require('./config');
+require('dotenv').config();
+
+const token    = process.env.BOT_TOKEN;
+const clientId = process.env.CLIENT_ID;
+const guildId  = process.env.GUILD_ID;
 
 const commands = [];
 const commandFiles = fs.readdirSync('./commands').filter(f => f.endsWith('.js'));
@@ -19,18 +18,19 @@ for (const file of commandFiles) {
   }
 }
 
-const rest = new REST({ version: '10' }).setToken(config.token);
+const rest = new REST({ version: '10' }).setToken(token);
 
 (async () => {
   try {
-    console.log(`\n🔄  Deploying ${commands.length} command(s) to guild ${config.guildId}...\n`);
+    console.log(`\n🔄  Deploying ${commands.length} command(s) to guild ${guildId}...\n`);
     await rest.put(
-      Routes.applicationGuildCommands(config.clientId, config.guildId),
+      Routes.applicationGuildCommands(clientId, guildId),
       { body: commands }
     );
-    console.log(`\n✅  All commands deployed successfully!`);
-    console.log(`    Commands are now available in your Discord server.\n`);
+    console.log(`✅  All commands deployed successfully!`);
+    process.exit(0);
   } catch (err) {
     console.error('❌  Deployment failed:', err.message);
+    process.exit(0);  // exit 0 so bot still starts even if commands fail
   }
 })();
