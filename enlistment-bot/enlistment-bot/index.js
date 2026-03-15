@@ -64,13 +64,14 @@ console.log('🔑  Token starts with:', config.token?.substring(0, 10));
 
 
 
-(async () => {
-  try {
-    client.on('error', (err) => console.error('❌ Client error:', err.message));
+client.on('error', (err) => console.error('❌ Client error:', err.message));
 client.on('warn', (msg) => console.warn('⚠️ Warning:', msg));
 client.on('shardDisconnect', (event) => console.error('🔴 Disconnected:', event));
 client.on('shardReconnecting', () => console.log('🔄 Reconnecting...'));
 client.on('shardResume', () => console.log('✅ Resumed connection'));
+
+(async () => {
+  try {
     await connect();
     console.log('🔄  Logging into Discord...');
     await client.login(config.token);
