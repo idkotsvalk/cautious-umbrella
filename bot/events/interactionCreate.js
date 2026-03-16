@@ -56,24 +56,49 @@ module.exports = {
 
 // ── Start Application ─────────────────────────
 async function handleStart(interaction) {
-  const userId = interaction.user.id;
+  try {
+    console.log(`[handleStart] ${interaction.user.tag}`);
+    const userId = interaction.user.id;
 
-  if (await data.isBlacklisted(userId)) {
-    const entry = await data.getBlacklistEntry(userId);
-    return interaction.reply({
-      embeds: [{ color: config.colors.danger, title: '🚫  Blacklisted', description: `You are blacklisted from applying.\n**Reason:** ${entry?.reason || 'No reason given'}` }],
-      ephemeral: true,
-    });
-  }
+    console.log('[handleStart] checking blacklist...');
+    const blacklisted = await data.isBlacklisted(userId);
+    if (blacklisted) {
+      const entry = await data.getBlacklistEntry(userId);
+      return interaction.reply({
+        embeds: [{ color: 0xE74C3C, title: '🚫  Blacklisted', description: `You are blacklisted.\n**Reason:** ${entry?.reason || 'No reason given'}` }],
+        ephemeral: true,
+      });
+    }
 
-  const allDivRoles = Object.values(config.roles.divisions).map(d => d.id);
-  const alreadyEnlisted = allDivRoles.some(id => interaction.member.roles.cache.has(id)) || interaction.member.roles.cache.has(config.roles.enlisted);
-  if (alreadyEnlisted) {
-    return interaction.reply({
-      embeds: [{ color: config.colors.warn, title: '⚠️  Already Enlisted', description: 'You are already a member of this regiment.' }],
-      ephemeral: true,
-    });
+    console.log('[handleStart] checking enlisted...');
+    const allDivRoles = Object.values(config.roles.divisions).map(d => d.id);
+    const alreadyEnlisted = allDivRoles.some(id => interaction.member.roles.cache.has(id)) || interaction.member.roles.cache.has(config.roles.enlisted);
+    if (alreadyEnlisted) {
+      return interaction.reply({
+        embeds: [{ color: 0xF1C40F, title: '⚠️  Already Enlisted', description: 'You are already a member of this regiment.' }],
+        ephemeral: true,
+      });
+    }
+
+    console.log('[handleStart] showing modal...');
+    const modal = new ModalBuilder().setCustomId('app_modal').setTitle('Colberg Grenadiers — Enlistment Form');
+    const q1 = new TextInputBuilder().setCustomId('roblox').setLabel('Roblox Username').setPlaceholder('Your exact Roblox username').setStyle(TextInputStyle.Short).setRequired(true).setMaxLength(20);
+    const q2 = new TextInputBuilder().setCustomId('timezone').setLabel('Your Timezone').setPlaceholder('e.g. EST, UTC+8, GMT+1').setStyle(TextInputStyle.Short).setRequired(true).setMaxLength(20);
+    const q3 = new TextInputBuilder().setCustomId('division').setLabel('Preferred Division').setPlaceholder('Infantry / Militia / Guard / Navy').setStyle(TextInputStyle.Short).setRequired(true).setMaxLength(20);
+    const q4 = new TextInputBuilder().setCustomId('activity').setLabel('Activity Level (1–10)').setPlaceholder('How active are you? 1 = rarely, 10 = daily').setStyle(TextInputStyle.Short).setRequired(true).setMaxLength(2);
+    modal.addComponents(
+      new ActionRowBuilder().addComponents(q1),
+      new ActionRowBuilder().addComponents(q2),
+      new ActionRowBuilder().addComponents(q3),
+      new ActionRowBuilder().addComponents(q4),
+    );
+    await interaction.showModal(modal);
+    console.log('[handleStart] modal shown!');
+  } catch (e) {
+    console.error('[handleStart ERROR]', e.message, e.stack);
+    await interaction.reply({ content: '❌ Error: ' + e.message, ephemeral: true }).catch(() => {});
   }
+}
 
   const modal = new ModalBuilder().setCustomId('app_modal').setTitle('Colberg Grenadiers — Enlistment Form');
 
