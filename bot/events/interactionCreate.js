@@ -147,4 +147,108 @@ async function handleModal(interaction, client) {
   let logMsg = null;
   if (logCh) {
     logMsg = await logCh.send({ embeds: [E.logEntry(app, interaction.member)] }).catch(() => null);
-    if (logMsg) await logMsg.react('📨
+    if (logMsg) await logMsg.react('📨').catch(() => {});
+  }
+
+  if (autoOk) {
+    const errors = await h.enlist(interaction.member, divKey, robloxData.username);
+    const nick   = h.buildNickname(divKey, robloxData.username);
+    await data.setAppStatus(app.id, { status: 'accepted', reviewedBy: client.user.id, reviewNote: 'Auto-approved' });
+    await interaction.user.send({ embeds: [E.acceptDM(app, nick)] }).catch(() => {});
+    if (logMsg) await logMsg.react('✅').catch(() => {});
+    const auditCh = interaction.guild.channels.cache.get(config.channels.auditLog);
+    if (auditCh) await auditCh.send({ embeds: [E.audit(app, client.user.id, 'accepted', 'Auto-approved')] }).catch(() => {});
+    if (errors.length) console.warn('[AutoAccept errors]', errors);
+    return;
+  }
+
+  const reviewCh = interaction.guild.channels.cache.get(config.channels.staffReview);
+  if (reviewCh) {
+    const staffRole = interaction.guild.roles.cache.get(config.roles.staff);
+    const ping      = staffRole ? `${staffRole} — New application needs review!` : '📋 New application needs review!';
+    const btns = new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId(`app_accept_${app.id}`).setLabel('Accept').setEmoji('✅').setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId(`app_deny_${app.id}`).setLabel('Deny').setEmoji('❌').setStyle(ButtonStyle.Danger),
+      new ButtonBuilder().setCustomId(`app_interview_${app.id}`).setLabel('Interview').setEmoji('📋').setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId(`app_waitlist_${app.id}`).setLabel('Waitlist').setEmoji('🔁').setStyle(ButtonStyle.Secondary),
+    );
+    const reviewMsg = await reviewCh.send({ content: ping, embeds: [E.staffReview(app, interaction.member)], components: [btns] }).catch(() => null);
+    if (reviewMsg) await reviewMsg.react('📨').catch(() => {});
+  }
+}
+
+async function handleStaffBtn(interaction) {
+  if (!h.isStaff(interaction.member)) {
+    return interaction.reply({ content: '❌ No permission.', ephemeral: true });
+  }
+
+  const parts  = interaction.customId.split('_');
+  const action = parts[1];
+  const appId  = parts.slice(2).join('_');
+  const app    = await data.getAppById(appId);
+
+  if (!app) return interaction.reply({ content: '❌ Application not found.', ephemeral: true });
+  if (app.status !== 'pending') return interaction.reply({ content: `⚠️ Already actioned (${app.status}).`, ephemeral: true });
+
+  const labels = { accept: 'Acceptance Note (optional)', deny: 'Denial Reason (required)', interview: 'Interview Note (optional)', waitlist: 'Waitlist Note (optional)' };
+  const modal  = new ModalBuilder().setCustomId(`note_${action}_${appId}`).setTitle(`${h.cap(action)} Application`);
+  modal.addComponents(
+    new ActionRowBuilder().addComponents(
+      new TextInputBuilder().setCustomId('note').setLabel(labels[action] || 'Note').setStyle(TextInputStyle.Paragraph).setRequired(action === 'deny').setMaxLength(500)
+    )
+  );
+  await interaction.showModal(modal);
+}
+
+async function handleNote(interaction, client) {
+  await interaction.deferReply({ ephemeral: true });
+
+  const parts     = interaction.customId.split('_');
+  const action    = parts[1];
+  const appId     = parts.slice(2).join('_');
+  const note      = interaction.fields.getTextInputValue('note')?.trim() || null;
+  const app       = await data.getAppById(appId);
+
+  if (!app) return interaction.editReply({ content: '❌ Not found.' });
+  if (app.status !== 'pending') return interaction.editReply({ content: `⚠️ Already actioned (${app.status}).` });
+
+  const statusMap = { accept: 'accepted', deny: 'denied', interview: 'interview', waitlist: 'waitlisted' };
+  const newStatus = statusMap[action];
+  if (!newStatus) return interaction.editReply({ content: '❌ Unknown action.' });
+
+  await data.setAppStatus(appId, { status: newStatus, reviewedBy: interaction.user.id, reviewNote: note });
+
+  const guild  = interaction.guild;
+  const member = await guild.members.fetch(app.userId).catch(() => null);
+
+  if (action === 'accept' && member) {
+    const errors = await h.enlist(member, app.answers.division, app.robloxData?.username || app.answers.roblox);
+    const nick   = h.buildNickname(app.answers.division, app.robloxData?.username || app.answers.roblox);
+    await member.user.send({ embeds: [E.acceptDM(app, nick)] }).catch(() => {});
+    if (errors.length) console.warn('[StaffAccept errors]', errors);
+  }
+
+  if (action === 'deny') {
+    if (member) await member.user.send({ embeds: [E.denyDM(app, note)] }).catch(() => {});
+    const denials = await data.countDenials(app.userId);
+    if (denials >= config.autoBlacklistAfter) {
+      await data.addBlacklist(app.userId, `Auto-blacklisted after ${denials} denials`, client.user.id);
+      await interaction.followUp({ content: `⚠️ <@${app.userId}> was auto-blacklisted.`, ephemeral: true }).catch(() => {});
+    }
+  }
+
+  if (action === 'interview' && member) await member.user.send({ embeds: [E.interviewDM(app)] }).catch(() => {});
+  if (action === 'waitlist'  && member) await member.user.send({ embeds: [E.waitlistDM(app, note)] }).catch(() => {});
+
+  const auditCh = guild.channels.cache.get(config.channels.auditLog);
+  if (auditCh) await auditCh.send({ embeds: [E.audit(app, interaction.user.id, newStatus, note)] }).catch(() => {});
+
+  if (interaction.message) {
+    await interaction.message.edit({ components: [] }).catch(() => {});
+    const reacts = { accepted: '✅', denied: '❌', waitlisted: '🔁', interview: '📋' };
+    await interaction.message.react(reacts[newStatus] || '📌').catch(() => {});
+  }
+
+  const msgs = { accepted: '✅ Accepted! Roles and nickname assigned.', denied: '❌ Denied. Applicant notified.', interview: '📋 Interview requested.', waitlisted: '🔁 Waitlisted.' };
+  await interaction.editReply({ content: msgs[newStatus] || 'Done.' });
+}
