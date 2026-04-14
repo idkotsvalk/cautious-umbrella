@@ -1,6 +1,6 @@
 FROM node:20-slim
 WORKDIR /app
-COPY package*.json ./
+COPY some-folder/package*.json ./
 RUN npm install
-COPY . .
+COPY cleanbot/ .
 CMD ["node", "index.js"]
